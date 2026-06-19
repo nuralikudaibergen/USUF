@@ -1,0 +1,207 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-heading), 'Bebas Neue', 'Montserrat', sans-serif;
+  --font-display: var(--font-display), 'Bebas Neue', 'Montserrat', sans-serif;
+  --font-sans: var(--font-body), 'Inter Fallback', sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-forest-light: var(--forest-light);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* YUSUF BRAND — Deep dark green + golden orange */
+  --background: #0F2A1F;          /* deep forest, slightly darker than #1B4332 */
+  --foreground: #E8A020;          /* golden text on dark */
+  --card: #1B4332;                /* primary brand background */
+  --card-foreground: #E8A020;
+  --popover: #1B4332;
+  --popover-foreground: #E8A020;
+  --primary: #E8A020;             /* gold is the primary accent */
+  --primary-foreground: #1B4332;  /* dark green text on gold */
+  --secondary: #163826;           /* deeper green for sections */
+  --secondary-foreground: #E8A020;
+  --muted: #14301F;
+  --muted-foreground: #C0C9B5;
+  --accent: #E8A020;              /* gold accent */
+  --accent-foreground: #1B4332;
+  --destructive: #B33A3A;
+  --border: rgba(232, 160, 32, 0.25);
+  --input: rgba(232, 160, 32, 0.2);
+  --ring: #E8A020;
+  --gold: #E8A020;
+  --gold-soft: #F4C25C;
+  --forest: #1B4332;
+  --forest-deep: #0F2A1F;
+  --forest-light: #2A5A3F;
+  --chart-1: #E8A020;
+  --chart-2: #F4C25C;
+  --chart-3: #2A5A3F;
+  --chart-4: #1B4332;
+  --chart-5: #C0C9B5;
+  --radius: 0.4rem;
+  --sidebar: #0F2A1F;
+  --sidebar-foreground: #E8A020;
+  --sidebar-primary: #E8A020;
+  --sidebar-primary-foreground: #1B4332;
+  --sidebar-accent: #163826;
+  --sidebar-accent-foreground: #E8A020;
+  --sidebar-border: rgba(232, 160, 32, 0.2);
+  --sidebar-ring: #E8A020;
+}
+
+.dark {
+  --background: #0F2A1F;
+  --foreground: #E8A020;
+  --card: #1B4332;
+  --card-foreground: #E8A020;
+  --popover: #1B4332;
+  --popover-foreground: #E8A020;
+  --primary: #E8A020;
+  --primary-foreground: #1B4332;
+  --secondary: #163826;
+  --secondary-foreground: #E8A020;
+  --muted: #14301F;
+  --muted-foreground: #C0C9B5;
+  --accent: #E8A020;
+  --accent-foreground: #1B4332;
+  --destructive: #B33A3A;
+  --border: rgba(232, 160, 32, 0.25);
+  --input: rgba(232, 160, 32, 0.2);
+  --ring: #E8A020;
+  --sidebar: #0F2A1F;
+  --sidebar-foreground: #E8A020;
+  --sidebar-primary: #E8A020;
+  --sidebar-primary-foreground: #1B4332;
+  --sidebar-accent: #163826;
+  --sidebar-accent-foreground: #E8A020;
+  --sidebar-border: rgba(232, 160, 32, 0.2);
+  --sidebar-ring: #E8A020;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+/* YUSUF BRAND — custom utilities */
+@layer utilities {
+  .text-gold { color: var(--gold); }
+  .text-gold-soft { color: var(--gold-soft); }
+  .bg-forest { background-color: var(--forest); }
+  .bg-forest-deep { background-color: var(--forest-deep); }
+  .bg-forest-light { background-color: var(--forest-light); }
+  .border-gold { border-color: var(--gold); }
+
+  .gold-glow {
+    box-shadow: 0 0 0 0 rgba(232, 160, 32, 0.0);
+    transition: box-shadow 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+  }
+  .gold-glow:hover {
+    box-shadow: 0 0 32px 0 rgba(232, 160, 32, 0.35), 0 0 0 1px rgba(232, 160, 32, 0.6);
+    border-color: rgba(232, 160, 32, 0.8);
+  }
+
+  .gold-underline {
+    position: relative;
+  }
+  .gold-underline::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -6px;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.3s ease;
+  }
+  .gold-underline:hover::after {
+    transform: scaleX(1);
+  }
+
+  .gold-shine {
+    background: linear-gradient(120deg, #E8A020 0%, #F4C25C 45%, #E8A020 80%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gold-shine 6s linear infinite;
+  }
+  @keyframes gold-shine {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .fade-up {
+    animation: fade-up 0.7s ease both;
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .pulse-ring {
+    animation: pulse-ring 2.4s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(232,160,32,0.6); }
+    70%  { box-shadow: 0 0 0 18px rgba(232,160,32,0); }
+    100% { box-shadow: 0 0 0 0 rgba(232,160,32,0); }
+  }
+}
