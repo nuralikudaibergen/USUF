@@ -30,24 +30,21 @@ export type User = {
 type AuthContextValue = {
   hydrated: boolean
   user: User | null
-  login: (phone: string, code: string) => { ok: true; user: User } | { ok: false; error: string }
+  login: (phone: string) => { ok: true; user: User } | { ok: false; error: string }
   logout: () => void
   updateUser: (patch: Partial<User>) => void
-  addAddress: (addr: Omit<Address, "id">) => void
+  addAddress: (address: Omit<Address, "id">) => void
   removeAddress: (id: string) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
-
 const KEY = "yb-user"
-const ADMIN_KEY = "yb-admin-auth"
 
 function readUser(): User | null {
   if (typeof window === "undefined") return null
   try {
     const raw = window.localStorage.getItem(KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as User
+    return raw ? (JSON.parse(raw) as User) : null
   } catch {
     return null
   }
@@ -75,36 +72,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!hydrated) return
-    writeUser(user)
-    if (user?.isAdmin) {
-      try {
-        window.localStorage.setItem(ADMIN_KEY, "true")
-      } catch {}
-    } else {
-      try {
-        window.localStorage.removeItem(ADMIN_KEY)
-      } catch {}
-    }
+    if (hydrated) writeUser(user)
   }, [user, hydrated])
 
-  const login: AuthContextValue["login"] = (phone, code) => {
+  const login: AuthContextValue["login"] = (phone) => {
     const cleanPhone = phone.replace(/\D/g, "")
-    if (cleanPhone.length < 7) return { ok: false, error: "Введите корректный номер" }
-    if (code.length < 4) return { ok: false, error: "Введите код из SMS" }
+    if (cleanPhone.length < 7) {
+      return { ok: false, error: "Введите корректный номер телефона" }
+    }
 
-    // Mock-авторизация: принимаем любой 4-значный код.
-    // Админ: номер оканчивается на 0000.
-    const isAdmin = cleanPhone.endsWith("0000")
-    const u: User = {
+    const nextUser: User = {
       id: `u-${cleanPhone}`,
       name: user?.name ?? "",
       phone: `+${cleanPhone}`,
       addresses: user?.addresses ?? [],
-      isAdmin,
+      isAdmin: false,
     }
-    setUser(u)
-    return { ok: true, user: u }
+    setUser(nextUser)
+    return { ok: true, user: nextUser }
   }
 
   const logout = () => setUser(null)
@@ -113,18 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev))
   }
 
-  const addAddress = (addr: Omit<Address, "id">) => {
+  const addAddress = (address: Omit<Address, "id">) => {
     setUser((prev) => {
       if (!prev) return prev
-      const a: Address = { ...addr, id: newId() }
-      return { ...prev, addresses: [...prev.addresses, a] }
+      const nextAddress: Address = { ...address, id: newId() }
+      return { ...prev, addresses: [...prev.addresses, nextAddress] }
     })
   }
 
   const removeAddress = (id: string) => {
     setUser((prev) =>
       prev
-        ? { ...prev, addresses: prev.addresses.filter((a) => a.id !== id) }
+        ? { ...prev, addresses: prev.addresses.filter((address) => address.id !== id) }
         : prev,
     )
   }

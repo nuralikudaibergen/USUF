@@ -1,19 +1,16 @@
 "use client"
 
-import { useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { MessageCircle, Check, MapPin, User, Phone, Tag, Send, ArrowRight } from "lucide-react"
-import { useCart } from "@/lib/cart-context"
-import { formatPrice } from "@/lib/products"
-import {
-  buildWhatsAppLink,
-  buildWhatsAppMessage,
-  type Customer,
-} from "@/lib/whatsapp-order"
-import { applyPromo, findPromo } from "@/lib/brand-config"
-import { SiteHeader } from "@/components/site-header"
+import { type FormEvent, useEffect, useMemo, useState } from "react"
+import { ArrowRight, Check, MapPin, MessageCircle, Phone, Send, User } from "lucide-react"
 import { SiteFooter } from "@/components/site-footer"
+import { SiteHeader } from "@/components/site-header"
+import { applyPromo, findPromo } from "@/lib/brand-config"
+import { useCart } from "@/lib/cart-context"
+import { buildWhatsAppLink, buildWhatsAppMessage, type Customer } from "@/lib/whatsapp-order"
+import { formatPrice } from "@/lib/products"
+import { saveOrderToSupabase } from "@/lib/supabase-store"
 
 export default function WhatsAppCheckoutPage() {
   const { detailed, subtotal, count } = useCart()
@@ -29,21 +26,36 @@ export default function WhatsAppCheckoutPage() {
   const discount = promo ? subtotal - applyPromo(subtotal, findPromo(promo)!) : 0
   const total = subtotal - discount
 
-  const waLink = useMemo(() => {
+  const orderItems = useMemo(
+    () =>
+      detailed.map(({ item, product }) => ({
+        productId: product.id,
+        slug: product.slug,
+        image: product.image,
+        name: product.name,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: product.price,
+      })),
+    [detailed],
+  )
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("promo")
+    const found = code ? findPromo(code) : undefined
+    if (!found) return
+    setPromoInput(found.code)
+    setPromo(found.code)
+  }, [])
+
+  const message = useMemo(() => {
     if (!name || !phone || !city) return ""
     const customer: Customer = { name, phone, city, address: address || undefined }
-    const items = detailed.map(({ item, product }) => ({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      size: item.size,
-      color: item.color,
-      quantity: item.quantity,
-      price: product.price,
-    }))
-    const msg = buildWhatsAppMessage(items, customer, total, promo ?? undefined)
-    return buildWhatsAppLink(msg)
-  }, [name, phone, city, address, detailed, total, promo])
+    return buildWhatsAppMessage(orderItems, customer, total, promo ?? undefined)
+  }, [name, phone, city, address, orderItems, total, promo])
+
+  const waLink = message ? buildWhatsAppLink(message) : ""
 
   const applyPromoCode = () => {
     setPromoError("")
@@ -52,23 +64,32 @@ export default function WhatsAppCheckoutPage() {
       setPromoError("Введите промокод")
       return
     }
-    const p = findPromo(code)
-    if (!p) {
+    const found = findPromo(code)
+    if (!found) {
       setPromoError("Промокод не найден")
       return
     }
-    setPromo(p.code)
+    setPromo(found.code)
   }
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const errs: typeof errors = {}
-    if (!name.trim() || name.trim().length < 2) errs.name = "Введите имя"
-    if (!phone.trim() || phone.replace(/\D/g, "").length < 7) errs.phone = "Введите корректный номер"
-    if (!city.trim()) errs.city = "Введите город"
-    setErrors(errs)
-    if (Object.keys(errs).length > 0) return
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    const nextErrors: typeof errors = {}
+    if (!name.trim() || name.trim().length < 2) nextErrors.name = "Введите имя"
+    if (!phone.trim() || phone.replace(/\D/g, "").length < 7) nextErrors.phone = "Введите корректный номер"
+    if (!city.trim()) nextErrors.city = "Введите город"
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
     if (waLink) {
+      await saveOrderToSupabase({
+        customer: { name, phone, city, address: address || undefined },
+        items: orderItems,
+        subtotal,
+        discount,
+        total,
+        promoCode: promo ?? undefined,
+        message,
+      })
       window.open(waLink, "_blank", "noopener,noreferrer")
     }
   }
@@ -82,14 +103,14 @@ export default function WhatsAppCheckoutPage() {
             <MessageCircle className="h-10 w-10 text-gold" />
           </div>
           <h1 className="mt-6 font-heading text-2xl font-black uppercase tracking-tight text-gold md:text-3xl">
-            Корзина пуста
+            Корзина пустая
           </h1>
-          <p className="mt-2 text-gold-soft/80">
+          <p className="mt-2 text-foreground/70">
             Добавьте товары, прежде чем оформлять заказ через WhatsApp.
           </p>
           <Link
             href="/catalog"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-gold px-8 py-3.5 font-heading text-sm font-extrabold uppercase tracking-[0.2em] text-forest"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-gold px-8 py-3.5 font-heading text-sm font-extrabold uppercase tracking-[0.18em] text-forest-deep"
           >
             В каталог
           </Link>
@@ -105,100 +126,74 @@ export default function WhatsAppCheckoutPage() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:py-12">
         <div className="mb-8 text-center">
           <span className="text-xs font-bold uppercase tracking-[0.4em] text-gold">
-            Шаг 1 из 1
+            Оформление
           </span>
           <h1 className="mt-2 font-heading text-3xl font-black uppercase tracking-tight text-gold md:text-5xl">
-            Оформление через WhatsApp
+            Заказ через WhatsApp
           </h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm text-gold-soft/80">
-            Заполните данные — мы сформируем готовое сообщение и откроем WhatsApp.
-            Все детали (доставка, оплата Kaspi / наличные) обсудим там.
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-foreground/72">
+            Заполните данные, и сайт отправит менеджеру готовый шаблон заказа с
+            нумерованным списком товаров.
           </p>
         </div>
 
-        <form
-          onSubmit={submit}
-          className="grid gap-8 lg:grid-cols-[1fr_400px]"
-        >
-          {/* Левая колонка — форма */}
+        <form onSubmit={submit} className="grid gap-8 lg:grid-cols-[1fr_400px]">
           <div className="space-y-6">
-            <div className="rounded-md border border-gold/30 bg-forest p-6">
+            <section className="rounded-md border border-gold/30 bg-forest p-6">
               <h2 className="flex items-center gap-2 font-heading text-lg font-extrabold uppercase tracking-[0.15em] text-gold">
-                <User className="size-5" /> Ваши данные
+                <User className="size-5" /> Данные покупателя
               </h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-gold-soft">
-                    Имя *
-                  </label>
+                <Field label="Имя" error={errors.name} required className="sm:col-span-2">
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(event) => setName(event.target.value)}
                     placeholder="Нуралы"
-                    className={`w-full rounded-md border bg-forest-deep px-4 py-3 text-sm text-gold outline-none placeholder:text-gold/40 focus:border-gold ${
-                      errors.name ? "border-destructive" : "border-gold/30"
-                    }`}
+                    className={`input ${errors.name ? "border-destructive" : "border-gold/30"}`}
                   />
-                  {errors.name && <p className="mt-1 text-xs font-medium text-destructive">{errors.name}</p>}
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-gold-soft">
-                    Телефон *
-                  </label>
+                </Field>
+                <Field label="Телефон" error={errors.phone} required icon={<Phone className="size-3.5" />}>
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(event) => setPhone(event.target.value)}
                     placeholder="+7 777 123 45 67"
-                    className={`w-full rounded-md border bg-forest-deep px-4 py-3 text-sm text-gold outline-none placeholder:text-gold/40 focus:border-gold ${
-                      errors.phone ? "border-destructive" : "border-gold/30"
-                    }`}
+                    className={`input ${errors.phone ? "border-destructive" : "border-gold/30"}`}
                   />
-                  {errors.phone && <p className="mt-1 text-xs font-medium text-destructive">{errors.phone}</p>}
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-gold-soft">
-                    Город *
-                  </label>
+                </Field>
+                <Field label="Город" error={errors.city} required>
                   <input
                     type="text"
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    onChange={(event) => setCity(event.target.value)}
                     placeholder="Туркестан"
-                    className={`w-full rounded-md border bg-forest-deep px-4 py-3 text-sm text-gold outline-none placeholder:text-gold/40 focus:border-gold ${
-                      errors.city ? "border-destructive" : "border-gold/30"
-                    }`}
+                    className={`input ${errors.city ? "border-destructive" : "border-gold/30"}`}
                   />
-                  {errors.city && <p className="mt-1 text-xs font-medium text-destructive">{errors.city}</p>}
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.15em] text-gold-soft">
-                    <MapPin className="size-3.5" /> Адрес доставки
-                  </label>
+                </Field>
+                <Field label="Адрес доставки" icon={<MapPin className="size-3.5" />} className="sm:col-span-2">
                   <input
                     type="text"
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Улица, дом, квартира"
-                    className="w-full rounded-md border border-gold/30 bg-forest-deep px-4 py-3 text-sm text-gold outline-none placeholder:text-gold/40 focus:border-gold"
+                    onChange={(event) => setAddress(event.target.value)}
+                    placeholder="Улица, дом, квартира или ориентир"
+                    className="input border-gold/30"
                   />
-                </div>
+                </Field>
               </div>
-            </div>
+            </section>
 
-            {/* Промокод */}
-            <div className="rounded-md border border-gold/30 bg-forest p-6">
-              <h2 className="flex items-center gap-2 font-heading text-lg font-extrabold uppercase tracking-[0.15em] text-gold">
-                <Tag className="size-5" /> Промокод
+            <section className="rounded-md border border-gold/30 bg-forest p-6">
+              <h2 className="font-heading text-lg font-extrabold uppercase tracking-[0.15em] text-gold">
+                Промокод
               </h2>
               <div className="mt-4 flex gap-2">
                 <input
                   type="text"
                   value={promoInput}
-                  onChange={(e) => setPromoInput(e.target.value)}
+                  onChange={(event) => setPromoInput(event.target.value)}
                   placeholder="Введите промокод"
-                  className="flex-1 rounded-md border border-gold/30 bg-forest-deep px-4 py-3 text-sm text-gold outline-none placeholder:text-gold/40 focus:border-gold"
+                  className="input flex-1 border-gold/30"
                 />
                 {promo ? (
                   <button
@@ -216,54 +211,39 @@ export default function WhatsAppCheckoutPage() {
                   <button
                     type="button"
                     onClick={applyPromoCode}
-                    className="rounded-md border border-gold bg-gold px-5 py-3 text-xs font-extrabold uppercase tracking-[0.15em] text-forest hover:opacity-90"
+                    className="rounded-md border border-gold bg-gold px-5 py-3 text-xs font-extrabold uppercase tracking-[0.15em] text-forest-deep hover:opacity-90"
                   >
-                    Применить
+                    OK
                   </button>
                 )}
               </div>
-              {promoError && (
-                <p className="mt-2 text-xs font-medium text-destructive">{promoError}</p>
-              )}
+              {promoError && <p className="mt-2 text-xs font-medium text-destructive">{promoError}</p>}
               {promo && (
                 <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-gold">
                   <Check className="size-3.5" /> Промокод применён
                 </p>
               )}
-              <p className="mt-3 text-xs text-gold-soft/60">
-                Попробуйте: <span className="font-mono font-bold text-gold">YUSUF10</span>, <span className="font-mono font-bold text-gold">SALE20</span>, <span className="font-mono font-bold text-gold">WELCOME</span>
-              </p>
-            </div>
+            </section>
           </div>
 
-          {/* Правая колонка — итог + кнопка */}
           <aside className="h-fit space-y-4 lg:sticky lg:top-24">
             <div className="rounded-md border border-gold/30 bg-forest p-6">
               <h2 className="font-heading text-lg font-extrabold uppercase tracking-[0.15em] text-gold">
                 Ваш заказ
               </h2>
               <ul className="mt-4 flex flex-col divide-y divide-gold/15">
-                {detailed.map(({ item, product }) => (
-                  <li
-                    key={`${item.productId}-${item.size}-${item.color}`}
-                    className="flex gap-3 py-3"
-                  >
+                {detailed.map(({ item, product }, index) => (
+                  <li key={`${item.productId}-${item.size}-${item.color}`} className="flex gap-3 py-3">
                     <div className="relative h-16 w-14 shrink-0 overflow-hidden rounded border border-gold/20 bg-forest-deep">
-                      <Image
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        sizes="56px"
-                      />
-                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-extrabold text-forest">
-                        {item.quantity}
+                      <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" sizes="56px" />
+                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-extrabold text-forest-deep">
+                        {index + 1}
                       </span>
                     </div>
                     <div className="flex flex-1 flex-col">
                       <p className="text-sm font-bold leading-tight text-gold">{product.name}</p>
-                      <p className="text-xs text-gold-soft/70">
-                        {item.color} · {item.size}
+                      <p className="text-xs text-foreground/65">
+                        {item.color} · {item.size} · {item.quantity} шт.
                       </p>
                     </div>
                     <p className="text-sm font-bold text-gold">
@@ -274,20 +254,9 @@ export default function WhatsAppCheckoutPage() {
               </ul>
 
               <dl className="mt-4 space-y-2 border-t border-gold/20 pt-4 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-gold-soft/70">Подытог</dt>
-                  <dd className="font-semibold text-gold">{formatPrice(subtotal)}</dd>
-                </div>
-                {promo && (
-                  <div className="flex justify-between text-gold-soft">
-                    <dt>Скидка ({promo})</dt>
-                    <dd className="font-semibold">−{formatPrice(discount)}</dd>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <dt className="text-gold-soft/70">Доставка</dt>
-                  <dd className="text-xs text-gold-soft/70">обсудим в WhatsApp</dd>
-                </div>
+                <Row label="Подытог" value={formatPrice(subtotal)} />
+                {promo && <Row label={`Скидка (${promo})`} value={`-${formatPrice(discount)}`} />}
+                <Row label="Доставка" value="обсудим в WhatsApp" muted />
                 <div className="mt-1 flex justify-between border-t border-gold/20 pt-3 text-base">
                   <dt className="font-bold text-gold">Итого</dt>
                   <dd className="font-extrabold text-gold">{formatPrice(total)}</dd>
@@ -297,34 +266,85 @@ export default function WhatsAppCheckoutPage() {
 
             <button
               type="submit"
-              disabled={!waLink}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#25D366] py-4 font-heading text-sm font-extrabold uppercase tracking-[0.15em] text-white shadow-[0_10px_30px_-10px_rgba(37,211,102,0.7)] transition-all hover:shadow-[0_15px_40px_-5px_rgba(37,211,102,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-[#25D366] py-4 font-heading text-sm font-extrabold uppercase tracking-[0.15em] text-white shadow-[0_10px_30px_-10px_rgba(37,211,102,0.7)] transition-all hover:shadow-[0_15px_40px_-5px_rgba(37,211,102,0.9)]"
             >
               <MessageCircle className="size-5" />
               Отправить заказ
               <ArrowRight className="size-4" />
             </button>
 
-            <p className="text-center text-[11px] text-gold-soft/60">
-              Нажимая кнопку, вы откроете WhatsApp с уже заполненным сообщением.
-              Доставка и оплата — Kaspi / наличные — обсуждаются с менеджером.
+            <p className="text-center text-[11px] leading-5 text-foreground/60">
+              Нажмите кнопку, и откроется WhatsApp с уже заполненным сообщением.
             </p>
           </aside>
         </form>
 
-        {/* Превью сообщения */}
-        {waLink && (
+        {message && (
           <details className="mt-10 rounded-md border border-gold/30 bg-forest p-6">
             <summary className="cursor-pointer font-heading text-sm font-extrabold uppercase tracking-[0.15em] text-gold">
-              Превью сообщения (нажмите чтобы раскрыть)
+              Предпросмотр сообщения
             </summary>
             <pre className="mt-4 whitespace-pre-wrap rounded-md bg-forest-deep p-4 text-sm text-gold-soft">
-{decodeURIComponent(waLink.split("text=")[1] || "")}
+              {message}
             </pre>
           </details>
         )}
       </main>
       <SiteFooter />
+
+      <style jsx>{`
+        :global(.input) {
+          width: 100%;
+          border-radius: 0.375rem;
+          background: var(--forest-deep);
+          padding: 0.75rem 1rem;
+          font-size: 0.875rem;
+          color: var(--foreground);
+          outline: none;
+        }
+        :global(.input:focus) {
+          border-color: var(--gold);
+        }
+        :global(.input::placeholder) {
+          color: rgba(255, 208, 122, 0.42);
+        }
+      `}</style>
+    </div>
+  )
+}
+
+function Field({
+  label,
+  error,
+  required,
+  children,
+  icon,
+  className = "",
+}: {
+  label: string
+  error?: string
+  required?: boolean
+  children: React.ReactNode
+  icon?: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={className}>
+      <label className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.15em] text-gold-soft">
+        {icon}
+        {label} {required && "*"}
+      </label>
+      {children}
+      {error && <p className="mt-1 text-xs font-medium text-destructive">{error}</p>}
+    </div>
+  )
+}
+
+function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="flex justify-between">
+      <dt className="text-foreground/68">{label}</dt>
+      <dd className={muted ? "text-xs text-foreground/62" : "font-semibold text-gold"}>{value}</dd>
     </div>
   )
 }

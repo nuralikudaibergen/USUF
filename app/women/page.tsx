@@ -1,6 +1,6 @@
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
 import { CollectionPage } from "@/components/home/collection-page"
+import { SiteFooter } from "@/components/site-footer"
+import { SiteHeader } from "@/components/site-header"
 
 export default function WomenPage() {
   return (
@@ -9,12 +9,11 @@ export default function WomenPage() {
       <main>
         <CollectionPage
           category="women"
-          href="/women"
           otherHref="/men"
           otherLabel="Мужская коллекция"
           eyebrow="Без усилий. С характером."
           title="Женская коллекция"
-          tagline="Скульптурные силуэты и благородные ткани — пальто, шёлк, кашемир, кожа, обувь. Вещи, которые говорят за вас."
+          tagline="Лаконичные силуэты, сезонные фактуры и вещи, которые легко собрать в образ."
           image="/categories/women.png"
         />
       </main>

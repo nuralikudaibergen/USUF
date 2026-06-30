@@ -8,7 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { products, type Product } from "@/lib/products"
+import { useAdmin } from "@/lib/admin-store"
+import type { Product } from "@/lib/products"
 import { useHydrated } from "@/lib/use-hydrated"
 
 export type CartItem = {
@@ -52,6 +53,7 @@ function readStorage(): CartItem[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { products } = useAdmin()
   const [items, setItems] = useState<CartItem[]>([])
   const hydrated = useHydrated()
 

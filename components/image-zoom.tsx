@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Image from "next/image"
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react"
+import { SafeImage } from "@/components/safe-image"
 
 export function ImageZoom({
   images,
@@ -55,7 +55,7 @@ export function ImageZoom({
             }`}
             aria-label={`Фото ${i + 1}`}
           >
-            <Image
+            <SafeImage
               src={src}
               alt=""
               fill
@@ -75,7 +75,7 @@ export function ImageZoom({
           onMouseMove={handleMove}
           onClick={() => setLightbox(true)}
         >
-          <Image
+          <SafeImage
             src={safe[idx]}
             alt={alt}
             fill
@@ -168,7 +168,7 @@ export function ImageZoom({
             className="relative h-[80vh] w-full max-w-4xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
+            <SafeImage
               src={safe[idx]}
               alt={alt}
               fill

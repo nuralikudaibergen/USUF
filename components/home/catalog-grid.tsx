@@ -1,18 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { type ReactNode, useMemo, useState } from "react"
 import { SlidersHorizontal, X } from "lucide-react"
 import { ProductCard } from "@/components/product-card"
 import type { Product } from "@/lib/products"
 
 type Filter = "all" | "men" | "women" | "shoes"
-type SortKey =
-  | "featured"
-  | "new"
-  | "popularity"
-  | "price-asc"
-  | "price-desc"
-  | "rating"
+type SortKey = "featured" | "new" | "popularity" | "price-asc" | "price-desc" | "rating"
 
 export function CatalogGrid({
   products,
@@ -29,52 +23,46 @@ export function CatalogGrid({
   const [activeColors, setActiveColors] = useState<string[]>([])
   const [priceMax, setPriceMax] = useState<number | null>(null)
 
+  const scopedProducts = useMemo(
+    () =>
+      products.filter((product) => {
+        if (filter === "shoes") return product.type === "footwear"
+        if (filter === "all") return true
+        return product.category === filter
+      }),
+    [products, filter],
+  )
+
   const allSizes = useMemo(() => {
     const set = new Set<string>()
-    products
-      .filter((p) => {
-        if (filter === "shoes") return p.type === "footwear"
-        if (filter === "all") return true
-        return p.category === filter
-      })
-      .forEach((p) => p.sizes.forEach((s) => set.add(s)))
+    scopedProducts.forEach((product) => product.sizes.forEach((size) => set.add(size)))
     return Array.from(set).slice(0, 12)
-  }, [products, filter])
+  }, [scopedProducts])
 
   const allColors = useMemo(() => {
     const set = new Set<string>()
-    products
-      .filter((p) => {
-        if (filter === "shoes") return p.type === "footwear"
-        if (filter === "all") return true
-        return p.category === filter
-      })
-      .forEach((p) => p.colors.forEach((c) => set.add(c)))
+    scopedProducts.forEach((product) => product.colors.forEach((color) => set.add(color)))
     return Array.from(set).slice(0, 18)
-  }, [products, filter])
+  }, [scopedProducts])
 
   const maxPrice = useMemo(
-    () => Math.max(...products.map((p) => p.price)),
+    () => Math.max(10000, ...products.map((product) => product.price)),
     [products],
   )
 
   const filtered = useMemo(() => {
-    let list = [...products]
-    if (filter === "shoes") list = list.filter((p) => p.type === "footwear")
-    else if (filter !== "all") list = list.filter((p) => p.category === filter)
-    if (onlySale) list = list.filter((p) => p.oldPrice)
-    if (onlyNew) list = list.filter((p) => p.isNew)
+    let list = [...scopedProducts]
+    if (onlySale) list = list.filter((product) => product.oldPrice)
+    if (onlyNew) list = list.filter((product) => product.isNew)
     if (activeSizes.length)
-      list = list.filter((p) => p.sizes.some((s) => activeSizes.includes(s)))
+      list = list.filter((product) => product.sizes.some((size) => activeSizes.includes(size)))
     if (activeColors.length)
-      list = list.filter((p) => p.colors.some((c) => activeColors.includes(c)))
-    if (priceMax !== null) list = list.filter((p) => p.price <= priceMax)
+      list = list.filter((product) => product.colors.some((color) => activeColors.includes(color)))
+    if (priceMax !== null) list = list.filter((product) => product.price <= priceMax)
 
     switch (sort) {
       case "new":
-        list.sort(
-          (a, b) => Number(b.isNew ?? false) - Number(a.isNew ?? false),
-        )
+        list.sort((a, b) => Number(b.isNew ?? false) - Number(a.isNew ?? false))
         break
       case "popularity":
         list.sort((a, b) => b.popularity - a.popularity)
@@ -89,31 +77,10 @@ export function CatalogGrid({
         list.sort((a, b) => b.rating - a.rating)
         break
       default:
-        list.sort(
-          (a, b) =>
-            Number(b.isFeatured ?? false) - Number(a.isFeatured ?? false),
-        )
+        list.sort((a, b) => Number(b.isFeatured ?? false) - Number(a.isFeatured ?? false))
     }
     return list
-  }, [
-    products,
-    filter,
-    onlySale,
-    onlyNew,
-    activeSizes,
-    activeColors,
-    priceMax,
-    sort,
-  ])
-
-  const toggleSize = (size: string) =>
-    setActiveSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size],
-    )
-  const toggleColor = (color: string) =>
-    setActiveColors((prev) =>
-      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color],
-    )
+  }, [activeColors, activeSizes, onlyNew, onlySale, priceMax, scopedProducts, sort])
 
   const reset = () => {
     setFilter(initialFilter)
@@ -146,52 +113,39 @@ export function CatalogGrid({
         </div>
 
         <div className="mb-8 flex flex-wrap items-center justify-center gap-3">
-          {filters.map((f) => (
+          {filters.map((item) => (
             <button
-              key={f.key}
+              key={item.key}
               type="button"
-              onClick={() => setFilter(f.key)}
-              className={`rounded-full border px-7 py-2.5 font-heading text-xs font-extrabold uppercase tracking-[0.2em] transition-all ${
-                filter === f.key
-                  ? "border-gold bg-gold text-forest"
+              onClick={() => setFilter(item.key)}
+              className={`min-h-11 cursor-pointer rounded-full border px-7 py-2.5 font-heading text-xs font-extrabold uppercase tracking-[0.18em] transition-all ${
+                filter === item.key
+                  ? "border-gold bg-gold text-forest-deep"
                   : "border-gold/30 text-gold hover:border-gold hover:bg-gold/10"
               }`}
             >
-              {f.label}
+              {item.label}
             </button>
           ))}
         </div>
 
-        <div className="grid gap-8 md:grid-cols-[240px_1fr]">
+        <div className="grid gap-8 md:grid-cols-[250px_1fr]">
           <aside className="space-y-7 rounded-md border border-gold/20 bg-forest p-6">
             <div>
-              <h3 className="mb-3 flex items-center gap-2 font-heading text-sm font-extrabold uppercase tracking-[0.2em] text-gold">
+              <h3 className="mb-3 flex items-center gap-2 font-heading text-sm font-extrabold uppercase tracking-[0.18em] text-gold">
                 <SlidersHorizontal className="size-4" /> Фильтры
               </h3>
-              <label className="flex cursor-pointer items-center gap-2 py-1 text-sm text-gold-soft">
-                <input
-                  type="checkbox"
-                  checked={onlySale}
-                  onChange={(e) => setOnlySale(e.target.checked)}
-                  className="size-4 accent-gold"
-                />
+              <label className="flex cursor-pointer items-center gap-2 py-1 text-sm text-foreground/76">
+                <input type="checkbox" checked={onlySale} onChange={(e) => setOnlySale(e.target.checked)} className="size-4 accent-gold" />
                 Со скидкой
               </label>
-              <label className="flex cursor-pointer items-center gap-2 py-1 text-sm text-gold-soft">
-                <input
-                  type="checkbox"
-                  checked={onlyNew}
-                  onChange={(e) => setOnlyNew(e.target.checked)}
-                  className="size-4 accent-gold"
-                />
+              <label className="flex cursor-pointer items-center gap-2 py-1 text-sm text-foreground/76">
+                <input type="checkbox" checked={onlyNew} onChange={(e) => setOnlyNew(e.target.checked)} className="size-4 accent-gold" />
                 Новинки
               </label>
             </div>
 
-            <div>
-              <h4 className="mb-3 text-sm font-extrabold uppercase tracking-[0.2em] text-gold">
-                Цена, до
-              </h4>
+            <FilterGroup title="Цена, до">
               <input
                 type="range"
                 min={10000}
@@ -199,67 +153,59 @@ export function CatalogGrid({
                 step={5000}
                 value={priceMax ?? maxPrice}
                 onChange={(e) => {
-                  const v = Number(e.target.value)
-                  setPriceMax(v >= maxPrice ? null : v)
+                  const value = Number(e.target.value)
+                  setPriceMax(value >= maxPrice ? null : value)
                 }}
                 className="w-full accent-gold"
               />
-              <div className="mt-1 flex items-center justify-between text-xs text-gold-soft/70">
+              <div className="mt-1 flex items-center justify-between text-xs text-foreground/62">
                 <span>10 000 ₸</span>
                 <span className="font-bold text-gold">
-                  {priceMax ? priceMax.toLocaleString("ru-RU") + " ₸" : "Любая"}
+                  {priceMax ? `${priceMax.toLocaleString("ru-RU")} ₸` : "Любая"}
                 </span>
               </div>
-            </div>
+            </FilterGroup>
 
-            <div>
-              <h4 className="mb-3 text-sm font-extrabold uppercase tracking-[0.2em] text-gold">
-                Размер
-              </h4>
+            <FilterGroup title="Размер">
               <div className="flex flex-wrap gap-2">
                 {allSizes.map((size) => (
-                  <button
+                  <ToggleChip
                     key={size}
-                    type="button"
-                    onClick={() => toggleSize(size)}
-                    className={`rounded-sm border px-3 py-1 text-xs font-semibold transition-colors ${
-                      activeSizes.includes(size)
-                        ? "border-gold bg-gold text-forest"
-                        : "border-gold/30 text-gold-soft hover:border-gold"
-                    }`}
+                    active={activeSizes.includes(size)}
+                    onClick={() =>
+                      setActiveSizes((prev) =>
+                        prev.includes(size) ? prev.filter((item) => item !== size) : [...prev, size],
+                      )
+                    }
                   >
                     {size}
-                  </button>
+                  </ToggleChip>
                 ))}
               </div>
-            </div>
+            </FilterGroup>
 
-            <div>
-              <h4 className="mb-3 text-sm font-extrabold uppercase tracking-[0.2em] text-gold">
-                Цвет
-              </h4>
+            <FilterGroup title="Цвет">
               <div className="flex flex-wrap gap-1.5">
                 {allColors.map((color) => (
-                  <button
+                  <ToggleChip
                     key={color}
-                    type="button"
-                    onClick={() => toggleColor(color)}
-                    className={`rounded-sm border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                      activeColors.includes(color)
-                        ? "border-gold bg-gold text-forest"
-                        : "border-gold/30 text-gold-soft hover:border-gold"
-                    }`}
+                    active={activeColors.includes(color)}
+                    onClick={() =>
+                      setActiveColors((prev) =>
+                        prev.includes(color) ? prev.filter((item) => item !== color) : [...prev, color],
+                      )
+                    }
                   >
                     {color}
-                  </button>
+                  </ToggleChip>
                 ))}
               </div>
-            </div>
+            </FilterGroup>
 
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-gold-soft hover:text-gold"
+              className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-bold uppercase tracking-[0.18em] text-gold-soft hover:text-gold"
             >
               <X className="size-3" /> Сбросить
             </button>
@@ -267,31 +213,31 @@ export function CatalogGrid({
 
           <div>
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-gold/20 pb-4">
-              <p className="font-heading text-sm font-bold uppercase tracking-[0.2em] text-gold">
+              <p className="font-heading text-sm font-bold uppercase tracking-[0.18em] text-gold">
                 {filtered.length} {filteredCount(filtered.length)}
               </p>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
-                className="rounded-md border border-gold/30 bg-forest px-3 py-2 text-sm font-semibold text-gold outline-none focus:border-gold"
+                className="rounded-md border border-gold/30 bg-forest px-3 py-2 text-sm font-semibold text-foreground outline-none focus:border-gold"
               >
-                <option value="featured" className="bg-forest text-gold">По умолчанию</option>
-                <option value="new" className="bg-forest text-gold">Новинки</option>
-                <option value="popularity" className="bg-forest text-gold">Популярность</option>
-                <option value="price-asc" className="bg-forest text-gold">Цена: по возрастанию</option>
-                <option value="price-desc" className="bg-forest text-gold">Цена: по убыванию</option>
-                <option value="rating" className="bg-forest text-gold">По рейтингу</option>
+                <option value="featured" className="bg-forest text-foreground">По умолчанию</option>
+                <option value="new" className="bg-forest text-foreground">Новинки</option>
+                <option value="popularity" className="bg-forest text-foreground">Популярность</option>
+                <option value="price-asc" className="bg-forest text-foreground">Цена: по возрастанию</option>
+                <option value="price-desc" className="bg-forest text-foreground">Цена: по убыванию</option>
+                <option value="rating" className="bg-forest text-foreground">По рейтингу</option>
               </select>
             </div>
 
             {filtered.length === 0 ? (
-              <p className="py-20 text-center text-sm text-gold-soft/70">
+              <p className="py-20 text-center text-sm text-foreground/68">
                 По выбранным фильтрам ничего не найдено.
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-3">
-                {filtered.map((p) => (
-                  <ProductCard key={p.id} product={p} />
+                {filtered.map((product) => (
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             )}
@@ -302,9 +248,44 @@ export function CatalogGrid({
   )
 }
 
-function filteredCount(n: number) {
-  const mod10 = n % 10
-  const mod100 = n % 100
+function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <h4 className="mb-3 text-sm font-extrabold uppercase tracking-[0.18em] text-gold">
+        {title}
+      </h4>
+      {children}
+    </div>
+  )
+}
+
+function ToggleChip({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean
+  children: ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-8 cursor-pointer rounded-sm border px-3 py-1 text-xs font-semibold transition-colors ${
+        active
+          ? "border-gold bg-gold text-forest-deep"
+          : "border-gold/30 text-foreground/72 hover:border-gold"
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function filteredCount(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
   if (mod10 === 1 && mod100 !== 11) return "товар"
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "товара"
   return "товаров"

@@ -1,25 +1,21 @@
-// YUSUF BRAND — config
+function normalizeSiteUrl(value: string | undefined) {
+  return (value || "https://yusufbrand.kz").replace(/\/+$/, "")
+}
 
 export const brandConfig = {
-  // Куда отправляются заказы через WhatsApp
-  whatsappNumber: "77056211845", // в международном формате без + и пробелов
-  // Базовый URL сайта (для ссылок в сообщении)
-  siteUrl: "https://yusufbrand.kz",
-  // Бренд
+  whatsappNumber: "77056211845",
+  siteUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   name: "YUSUF BRAND",
   shortName: "YB",
   phoneDisplay: "+7 (705) 621-18-45",
   email: "Kudaibergennurali0@gmail.com",
   instagram:
     "https://www.instagram.com/yusuf_brand_kz?igsh=MTZucG1rYWNrankyMQ==",
-  // Город магазина
   city: "Туркестан",
-  // Адрес шоурума (для страницы «Контакты» и самовывоза)
   showroomAddress: "Туркестан, проспект Тәуке хан, 242/6",
   showroomMapUrl: "https://2gis.kz/turkestan/geo/70000001105993483",
 }
 
-// Промокоды (демо)
 export type PromoCode = {
   code: string
   type: "percent" | "fixed"
@@ -35,7 +31,7 @@ export const promoCodes: PromoCode[] = [
 
 export function findPromo(code: string): PromoCode | undefined {
   return promoCodes.find(
-    (p) => p.code.toUpperCase() === code.trim().toUpperCase(),
+    (promo) => promo.code.toUpperCase() === code.trim().toUpperCase(),
   )
 }
 

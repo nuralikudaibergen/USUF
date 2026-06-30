@@ -1,18 +1,17 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Minus, Plus, Trash2, ShoppingBag, MessageCircle, Tag, X } from "lucide-react"
+import { useState } from "react"
+import { MessageCircle, Minus, Plus, ShoppingBag, Tag, Trash2, X } from "lucide-react"
+import { SiteFooter } from "@/components/site-footer"
+import { SiteHeader } from "@/components/site-header"
+import { applyPromo, findPromo } from "@/lib/brand-config"
 import { useCart } from "@/lib/cart-context"
 import { formatPrice } from "@/lib/products"
-import { applyPromo, findPromo } from "@/lib/brand-config"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
 
 export default function CartPage() {
   const { detailed, updateQuantity, removeItem, subtotal, count } = useCart()
-
   const [promoInput, setPromoInput] = useState("")
   const [promo, setPromo] = useState<string | null>(null)
   const [promoError, setPromoError] = useState("")
@@ -22,12 +21,12 @@ export default function CartPage() {
 
   const applyCode = () => {
     setPromoError("")
-    const p = findPromo(promoInput)
-    if (!p) {
+    const promoCode = findPromo(promoInput)
+    if (!promoCode) {
       setPromoError("Промокод не найден")
       return
     }
-    setPromo(p.code)
+    setPromo(promoCode.code)
   }
 
   return (
@@ -43,13 +42,13 @@ export default function CartPage() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full border border-gold/30 bg-forest">
               <ShoppingBag className="h-9 w-9 text-gold" />
             </div>
-            <p className="font-heading text-lg font-bold text-gold">Корзина пуста</p>
-            <p className="max-w-sm text-sm text-gold-soft/70">
+            <p className="font-heading text-lg font-bold text-gold">Корзина пустая</p>
+            <p className="max-w-sm text-sm text-foreground/68">
               Добавьте вещи в корзину, чтобы оформить заказ через WhatsApp.
             </p>
             <Link
               href="/catalog"
-              className="mt-2 inline-flex items-center gap-2 rounded-full bg-gold px-7 py-3 font-heading text-sm font-extrabold uppercase tracking-[0.2em] text-forest"
+              className="mt-2 inline-flex items-center gap-2 rounded-full bg-gold px-7 py-3 font-heading text-sm font-extrabold uppercase tracking-[0.18em] text-forest-deep"
             >
               В каталог
             </Link>
@@ -57,40 +56,35 @@ export default function CartPage() {
         ) : (
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
             <ul className="flex flex-col divide-y divide-gold/15">
-              {detailed.map(({ item, product }) => (
-                <li
-                  key={`${item.productId}-${item.size}-${item.color}`}
-                  className="flex gap-4 py-5"
-                >
+              {detailed.map(({ item, product }, index) => (
+                <li key={`${item.productId}-${item.size}-${item.color}`} className="flex gap-4 py-5">
                   <Link
                     href={`/product/${product.slug ?? product.id}`}
                     className="relative h-28 w-24 shrink-0 overflow-hidden rounded-md border border-gold/20 bg-forest"
                   >
-                    <Image
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      sizes="96px"
-                    />
+                    <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" sizes="96px" />
                   </Link>
 
                   <div className="flex flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold-soft/55">
+                          #{index + 1}
+                        </p>
                         <Link
                           href={`/product/${product.slug ?? product.id}`}
                           className="font-heading text-base font-bold text-gold transition-colors hover:text-gold-soft"
                         >
                           {product.name}
                         </Link>
-                        <p className="mt-1 text-sm text-gold-soft/70">
+                        <p className="mt-1 text-sm text-foreground/70">
                           {item.color} · размер {item.size}
                         </p>
                       </div>
                       <button
+                        type="button"
                         onClick={() => removeItem(item.productId, item.size, item.color)}
-                        className="text-gold-soft/60 transition-colors hover:text-gold"
+                        className="cursor-pointer text-gold-soft/60 transition-colors hover:text-gold"
                         aria-label={`Удалить ${product.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -100,22 +94,18 @@ export default function CartPage() {
                     <div className="mt-auto flex items-end justify-between pt-3">
                       <div className="inline-flex items-center rounded-md border border-gold/30">
                         <button
-                          onClick={() =>
-                            updateQuantity(item.productId, item.size, item.color, item.quantity - 1)
-                          }
-                          className="flex h-9 w-9 items-center justify-center text-gold-soft/70 hover:text-gold"
+                          type="button"
+                          onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity - 1)}
+                          className="flex h-9 w-9 cursor-pointer items-center justify-center text-gold-soft/70 hover:text-gold"
                           aria-label="Уменьшить"
                         >
                           <Minus className="h-3.5 w-3.5" />
                         </button>
-                        <span className="w-8 text-center text-sm font-semibold text-gold">
-                          {item.quantity}
-                        </span>
+                        <span className="w-8 text-center text-sm font-semibold text-gold">{item.quantity}</span>
                         <button
-                          onClick={() =>
-                            updateQuantity(item.productId, item.size, item.color, item.quantity + 1)
-                          }
-                          className="flex h-9 w-9 items-center justify-center text-gold-soft/70 hover:text-gold"
+                          type="button"
+                          onClick={() => updateQuantity(item.productId, item.size, item.color, item.quantity + 1)}
+                          className="flex h-9 w-9 cursor-pointer items-center justify-center text-gold-soft/70 hover:text-gold"
                           aria-label="Увеличить"
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -136,28 +126,16 @@ export default function CartPage() {
                   Итого
                 </h2>
                 <dl className="mt-4 flex flex-col gap-3 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-gold-soft/70">Подытог ({count} поз.)</dt>
-                    <dd className="font-semibold text-gold">{formatPrice(subtotal)}</dd>
-                  </div>
-                  {promo && (
-                    <div className="flex justify-between text-gold-soft">
-                      <dt>Скидка ({promo})</dt>
-                      <dd className="font-semibold">−{formatPrice(discount)}</dd>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <dt className="text-gold-soft/70">Доставка</dt>
-                    <dd className="text-xs text-gold-soft/70">обсудим в WhatsApp</dd>
-                  </div>
+                  <Row label={`Подытог (${count} поз.)`} value={formatPrice(subtotal)} />
+                  {promo && <Row label={`Скидка (${promo})`} value={`-${formatPrice(discount)}`} muted />}
+                  <Row label="Доставка" value="обсудим в WhatsApp" small />
                   <div className="mt-1 flex justify-between border-t border-gold/20 pt-3 text-base">
-                    <dt className="font-bold text-gold">Итого</dt>
+                    <dt className="font-bold text-gold">К оплате</dt>
                     <dd className="font-extrabold text-gold">{formatPrice(total)}</dd>
                   </div>
                 </dl>
               </div>
 
-              {/* Промокод */}
               <div className="rounded-lg border border-gold/30 bg-forest p-6">
                 <h3 className="flex items-center gap-2 font-heading text-sm font-extrabold uppercase tracking-[0.15em] text-gold">
                   <Tag className="size-4" /> Промокод
@@ -176,7 +154,7 @@ export default function CartPage() {
                           setPromoInput("")
                           setPromoError("")
                         }}
-                        className="rounded-md border border-gold/30 px-3 text-gold-soft hover:text-gold"
+                        className="cursor-pointer rounded-md border border-gold/30 px-3 text-gold-soft hover:text-gold"
                         aria-label="Удалить промокод"
                       >
                         <X className="size-4" />
@@ -187,16 +165,16 @@ export default function CartPage() {
                       <input
                         type="text"
                         value={promoInput}
-                        onChange={(e) => setPromoInput(e.target.value)}
+                        onChange={(event) => setPromoInput(event.target.value)}
                         placeholder="YUSUF10"
-                        className="flex-1 rounded-md border border-gold/30 bg-forest-deep px-3 py-2.5 text-sm text-gold outline-none placeholder:text-gold/40 focus:border-gold"
+                        className="flex-1 rounded-md border border-gold/30 bg-forest-deep px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-gold/40 focus:border-gold"
                       />
                       <button
                         type="button"
                         onClick={applyCode}
-                        className="rounded-md border border-gold bg-gold px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.15em] text-forest hover:opacity-90"
+                        className="cursor-pointer rounded-md border border-gold bg-gold px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.15em] text-forest-deep hover:opacity-90"
                       >
-                        Применить
+                        OK
                       </button>
                     </>
                   )}
@@ -204,9 +182,8 @@ export default function CartPage() {
                 {promoError && <p className="mt-2 text-xs font-medium text-destructive">{promoError}</p>}
               </div>
 
-              {/* CTA — WhatsApp */}
               <Link
-                href="/whatsapp"
+                href={`/whatsapp${promo ? `?promo=${encodeURIComponent(promo)}` : ""}`}
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-[#25D366] py-4 font-heading text-sm font-extrabold uppercase tracking-[0.15em] text-white shadow-[0_10px_30px_-10px_rgba(37,211,102,0.7)] transition-all hover:shadow-[0_15px_40px_-5px_rgba(37,211,102,0.9)]"
               >
                 <MessageCircle className="size-5" />
@@ -223,6 +200,15 @@ export default function CartPage() {
         )}
       </main>
       <SiteFooter />
+    </div>
+  )
+}
+
+function Row({ label, value, muted, small }: { label: string; value: string; muted?: boolean; small?: boolean }) {
+  return (
+    <div className={`flex justify-between ${muted ? "text-gold-soft" : ""}`}>
+      <dt className="text-foreground/68">{label}</dt>
+      <dd className={`${small ? "text-xs text-foreground/62" : "font-semibold text-gold"}`}>{value}</dd>
     </div>
   )
 }

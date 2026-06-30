@@ -8,16 +8,23 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { products as seedProducts, type Product } from "@/lib/products"
 import { promoCodes as seedPromos, type PromoCode } from "@/lib/brand-config"
+import { products as seedProducts, type Product } from "@/lib/products"
+import {
+  deleteCategoryFromSupabase,
+  deleteProductFromSupabase,
+  deletePromoFromSupabase,
+  fetchCategoriesFromSupabase,
+  fetchProductsFromSupabase,
+  fetchPromosFromSupabase,
+  saveCategoryToSupabase,
+  saveProductToSupabase,
+  savePromoToSupabase,
+} from "@/lib/supabase-store"
 import { useHydrated } from "@/lib/use-hydrated"
 
 type NewProduct = Omit<Product, "id"> & { id?: string }
 
-/**
- * Навигационная категория для шапки / каталога / главной.
- * Отличается от Product.category (пол) — это именно раздел магазина.
- */
 export type NavCategory = {
   id: string
   slug: string
@@ -31,12 +38,12 @@ type AdminContextValue = {
   products: Product[]
   promos: PromoCode[]
   categories: NavCategory[]
-  addProduct: (p: NewProduct) => Product
+  addProduct: (product: NewProduct) => Product
   updateProduct: (id: string, patch: Partial<Product>) => void
-  deleteProduct: (id: string) => void
-  addPromo: (p: PromoCode) => void
+  deleteProduct: (id: string) => Promise<boolean>
+  addPromo: (promo: PromoCode) => void
   deletePromo: (code: string) => void
-  addCategory: (c: Omit<NavCategory, "id">) => NavCategory
+  addCategory: (category: Omit<NavCategory, "id">) => NavCategory
   updateCategory: (id: string, patch: Partial<NavCategory>) => void
   deleteCategory: (id: string) => void
   resetToDefaults: () => void
@@ -49,34 +56,10 @@ const PROMOS_KEY = "yb-admin-promos"
 const CATEGORIES_KEY = "yb-admin-categories"
 
 const seedCategories: NavCategory[] = [
-  {
-    id: "cat-men",
-    slug: "men",
-    label: "Мужская",
-    image: "/categories/men.png",
-    href: "/men",
-  },
-  {
-    id: "cat-women",
-    slug: "women",
-    label: "Женская",
-    image: "/categories/women.png",
-    href: "/women",
-  },
-  {
-    id: "cat-shoes",
-    slug: "shoes",
-    label: "Обувь",
-    image: "/categories/shoes.png",
-    href: "/shoes",
-  },
-  {
-    id: "cat-sale",
-    slug: "sale",
-    label: "Распродажа",
-    image: "/categories/sale.png",
-    href: "/sale",
-  },
+  { id: "cat-men", slug: "men", label: "Мужская", image: "/categories/men.png", href: "/men" },
+  { id: "cat-women", slug: "women", label: "Женская", image: "/categories/women.png", href: "/women" },
+  { id: "cat-shoes", slug: "shoes", label: "Обувь", image: "/products/men-tshirt.png", href: "/shoes" },
+  { id: "cat-sale", slug: "sale", label: "Sale", image: "/products/women-dress.png", href: "/sale" },
 ]
 
 function readJSON<T>(key: string, fallback: T): T {
@@ -94,12 +77,16 @@ function writeJSON(key: string, value: unknown) {
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
   } catch {
-    // ignore
+    // LocalStorage can be full when many large uploaded photos are saved.
   }
 }
 
-function nextId(existing: Product[]): string {
+function nextProductId() {
   return `prod-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`
+}
+
+function nextCategoryId() {
+  return `cat-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`
 }
 
 export function AdminProvider({ children }: { children: ReactNode }) {
@@ -108,77 +95,124 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [promos, setPromos] = useState<PromoCode[]>(seedPromos)
   const [categories, setCategories] = useState<NavCategory[]>(seedCategories)
 
-  // Load from localStorage on mount.
   useEffect(() => {
     setProducts(readJSON(PRODUCTS_KEY, seedProducts))
     setPromos(readJSON(PROMOS_KEY, seedPromos))
     setCategories(readJSON(CATEGORIES_KEY, seedCategories))
+
+    let cancelled = false
+    async function loadRemote() {
+      const [remoteProducts, remotePromos, remoteCategories] = await Promise.all([
+        fetchProductsFromSupabase(),
+        fetchPromosFromSupabase(),
+        fetchCategoriesFromSupabase(),
+      ])
+      if (cancelled) return
+      if (remoteProducts && remoteProducts.length > 0) setProducts(remoteProducts)
+      if (remotePromos && remotePromos.length > 0) setPromos(remotePromos)
+      if (remoteCategories && remoteCategories.length > 0) setCategories(remoteCategories)
+    }
+    loadRemote()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  // Persist products.
   useEffect(() => {
-    if (!hydrated) return
-    writeJSON(PRODUCTS_KEY, products)
+    if (hydrated) writeJSON(PRODUCTS_KEY, products)
   }, [products, hydrated])
 
-  // Persist promos.
   useEffect(() => {
-    if (!hydrated) return
-    writeJSON(PROMOS_KEY, promos)
+    if (hydrated) writeJSON(PROMOS_KEY, promos)
   }, [promos, hydrated])
 
-  // Persist categories.
   useEffect(() => {
-    if (!hydrated) return
-    writeJSON(CATEGORIES_KEY, categories)
+    if (hydrated) writeJSON(CATEGORIES_KEY, categories)
   }, [categories, hydrated])
 
-  const addProduct = (p: NewProduct): Product => {
-    const id = p.id ?? nextId(products)
-    const product: Product = { ...(p as Product), id }
+  const addProduct = (productDraft: NewProduct): Product => {
+    const product: Product = {
+      ...(productDraft as Product),
+      id: productDraft.id ?? nextProductId(),
+    }
     setProducts((prev) => [product, ...prev])
+    saveProductToSupabase(product).then((saved) => {
+      if (!saved) return
+      setProducts((prev) => prev.map((item) => (item.id === product.id ? saved : item)))
+    })
     return product
   }
 
   const updateProduct = (id: string, patch: Partial<Product>) => {
+    let nextProduct: Product | null = null
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+      prev.map((product) => {
+        if (product.id !== id) return product
+        nextProduct = { ...product, ...patch }
+        return nextProduct
+      }),
     )
+    queueMicrotask(() => {
+      if (nextProduct) saveProductToSupabase(nextProduct)
+    })
   }
 
-  const deleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id))
+  const deleteProduct = async (id: string) => {
+    const product = products.find((item) => item.id === id)
+    setProducts((prev) => prev.filter((product) => product.id !== id))
+    const deleted = await deleteProductFromSupabase(product ?? id)
+    if (!deleted && product) {
+      setProducts((prev) => (prev.some((item) => item.id === id) ? prev : [product, ...prev]))
+    }
+    return deleted
   }
 
-  const addPromo = (p: PromoCode) => {
-    setPromos((prev) => [p, ...prev.filter((x) => x.code !== p.code)])
+  const addPromo = (promo: PromoCode) => {
+    setPromos((prev) => [promo, ...prev.filter((item) => item.code !== promo.code)])
+    savePromoToSupabase(promo)
   }
 
   const deletePromo = (code: string) => {
-    setPromos((prev) => prev.filter((p) => p.code !== code))
+    setPromos((prev) => prev.filter((promo) => promo.code !== code))
+    deletePromoFromSupabase(code)
   }
 
-  const addCategory = (c: Omit<NavCategory, "id">): NavCategory => {
-    const id = `cat-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`
-    const next: NavCategory = { ...c, id }
-    setCategories((prev) => [next, ...prev])
-    return next
+  const addCategory = (categoryDraft: Omit<NavCategory, "id">): NavCategory => {
+    const category: NavCategory = { ...categoryDraft, id: nextCategoryId() }
+    setCategories((prev) => [category, ...prev])
+    saveCategoryToSupabase(category).then((saved) => {
+      if (!saved) return
+      setCategories((prev) => prev.map((item) => (item.id === category.id ? saved : item)))
+    })
+    return category
   }
 
   const updateCategory = (id: string, patch: Partial<NavCategory>) => {
+    let nextCategory: NavCategory | null = null
     setCategories((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+      prev.map((category) => {
+        if (category.id !== id) return category
+        nextCategory = { ...category, ...patch }
+        return nextCategory
+      }),
     )
+    queueMicrotask(() => {
+      if (nextCategory) saveCategoryToSupabase(nextCategory)
+    })
   }
 
   const deleteCategory = (id: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== id))
+    setCategories((prev) => prev.filter((category) => category.id !== id))
+    deleteCategoryFromSupabase(id)
   }
 
   const resetToDefaults = () => {
     setProducts(seedProducts)
     setPromos(seedPromos)
     setCategories(seedCategories)
+    seedProducts.forEach((product) => saveProductToSupabase(product))
+    seedPromos.forEach((promo) => savePromoToSupabase(promo))
+    seedCategories.forEach((category) => saveCategoryToSupabase(category))
   }
 
   const value: AdminContextValue = useMemo(

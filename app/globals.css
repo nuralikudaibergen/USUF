@@ -54,93 +54,71 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  /* YUSUF BRAND — Deep dark green + golden orange */
-  --background: #0F2A1F;          /* deep forest, slightly darker than #1B4332 */
-  --foreground: #E8A020;          /* golden text on dark */
-  --card: #1B4332;                /* primary brand background */
-  --card-foreground: #E8A020;
-  --popover: #1B4332;
-  --popover-foreground: #E8A020;
-  --primary: #E8A020;             /* gold is the primary accent */
-  --primary-foreground: #1B4332;  /* dark green text on gold */
-  --secondary: #163826;           /* deeper green for sections */
-  --secondary-foreground: #E8A020;
-  --muted: #14301F;
-  --muted-foreground: #C0C9B5;
-  --accent: #E8A020;              /* gold accent */
-  --accent-foreground: #1B4332;
-  --destructive: #B33A3A;
-  --border: rgba(232, 160, 32, 0.25);
-  --input: rgba(232, 160, 32, 0.2);
-  --ring: #E8A020;
-  --gold: #E8A020;
-  --gold-soft: #F4C25C;
-  --forest: #1B4332;
-  --forest-deep: #0F2A1F;
-  --forest-light: #2A5A3F;
-  --chart-1: #E8A020;
-  --chart-2: #F4C25C;
-  --chart-3: #2A5A3F;
-  --chart-4: #1B4332;
-  --chart-5: #C0C9B5;
-  --radius: 0.4rem;
-  --sidebar: #0F2A1F;
-  --sidebar-foreground: #E8A020;
-  --sidebar-primary: #E8A020;
-  --sidebar-primary-foreground: #1B4332;
-  --sidebar-accent: #163826;
-  --sidebar-accent-foreground: #E8A020;
-  --sidebar-border: rgba(232, 160, 32, 0.2);
-  --sidebar-ring: #E8A020;
-}
-
+:root,
 .dark {
-  --background: #0F2A1F;
-  --foreground: #E8A020;
-  --card: #1B4332;
-  --card-foreground: #E8A020;
-  --popover: #1B4332;
-  --popover-foreground: #E8A020;
-  --primary: #E8A020;
-  --primary-foreground: #1B4332;
-  --secondary: #163826;
-  --secondary-foreground: #E8A020;
-  --muted: #14301F;
-  --muted-foreground: #C0C9B5;
-  --accent: #E8A020;
-  --accent-foreground: #1B4332;
+  --background: #061E16;
+  --foreground: #FFF2D7;
+  --card: #0B2B1F;
+  --card-foreground: #FFF2D7;
+  --popover: #0B2B1F;
+  --popover-foreground: #FFF2D7;
+  --primary: #FF9213;
+  --primary-foreground: #061E16;
+  --secondary: #123828;
+  --secondary-foreground: #FFF2D7;
+  --muted: #0E3023;
+  --muted-foreground: #C8D7C4;
+  --accent: #FF9213;
+  --accent-foreground: #061E16;
   --destructive: #B33A3A;
-  --border: rgba(232, 160, 32, 0.25);
-  --input: rgba(232, 160, 32, 0.2);
-  --ring: #E8A020;
-  --sidebar: #0F2A1F;
-  --sidebar-foreground: #E8A020;
-  --sidebar-primary: #E8A020;
-  --sidebar-primary-foreground: #1B4332;
-  --sidebar-accent: #163826;
-  --sidebar-accent-foreground: #E8A020;
-  --sidebar-border: rgba(232, 160, 32, 0.2);
-  --sidebar-ring: #E8A020;
+  --border: rgba(255, 146, 19, 0.24);
+  --input: rgba(255, 146, 19, 0.2);
+  --ring: #FF9213;
+  --gold: #FF9213;
+  --gold-soft: #FFD07A;
+  --forest: #0B2B1F;
+  --forest-deep: #061E16;
+  --forest-light: #1B563D;
+  --chart-1: #FF9213;
+  --chart-2: #FFD07A;
+  --chart-3: #1B563D;
+  --chart-4: #0B2B1F;
+  --chart-5: #C8D7C4;
+  --radius: 0.4rem;
+  --sidebar: #061E16;
+  --sidebar-foreground: #FFF2D7;
+  --sidebar-primary: #FF9213;
+  --sidebar-primary-foreground: #061E16;
+  --sidebar-accent: #123828;
+  --sidebar-accent-foreground: #FFF2D7;
+  --sidebar-border: rgba(255, 146, 19, 0.2);
+  --sidebar-ring: #FF9213;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
     scroll-behavior: smooth;
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading tracking-tight;
   }
 }
 
-/* YUSUF BRAND — custom utilities */
 @layer utilities {
   .text-gold { color: var(--gold); }
   .text-gold-soft { color: var(--gold-soft); }
@@ -149,40 +127,61 @@
   .bg-forest-light { background-color: var(--forest-light); }
   .border-gold { border-color: var(--gold); }
 
+  .brand-surface {
+    background:
+      linear-gradient(135deg, rgba(255, 146, 19, 0.13), transparent 34%),
+      linear-gradient(180deg, rgba(255, 242, 215, 0.045), transparent 42%),
+      var(--forest-deep);
+  }
+
+  .brand-noise {
+    background-image:
+      linear-gradient(rgba(255, 146, 19, 0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 146, 19, 0.05) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, black, transparent);
+  }
+
   .gold-glow {
-    box-shadow: 0 0 0 0 rgba(232, 160, 32, 0.0);
+    box-shadow: 0 0 0 0 rgba(255, 146, 19, 0);
     transition: box-shadow 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
   }
+
   .gold-glow:hover {
-    box-shadow: 0 0 32px 0 rgba(232, 160, 32, 0.35), 0 0 0 1px rgba(232, 160, 32, 0.6);
-    border-color: rgba(232, 160, 32, 0.8);
+    box-shadow: 0 0 32px 0 rgba(255, 146, 19, 0.28), 0 0 0 1px rgba(255, 146, 19, 0.55);
+    border-color: rgba(255, 146, 19, 0.78);
   }
 
   .gold-underline {
     position: relative;
   }
+
   .gold-underline::after {
     content: "";
     position: absolute;
-    left: 0; right: 0; bottom: -6px;
+    left: 0;
+    right: 0;
+    bottom: -6px;
     height: 2px;
     background: var(--gold);
     transform: scaleX(0);
     transform-origin: center;
     transition: transform 0.3s ease;
   }
+
   .gold-underline:hover::after {
     transform: scaleX(1);
   }
 
   .gold-shine {
-    background: linear-gradient(120deg, #E8A020 0%, #F4C25C 45%, #E8A020 80%);
+    background: linear-gradient(120deg, #FF7F0A 0%, #FFD07A 45%, #FF9213 80%);
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     animation: gold-shine 6s linear infinite;
   }
+
   @keyframes gold-shine {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
@@ -191,17 +190,72 @@
   .fade-up {
     animation: fade-up 0.7s ease both;
   }
+
   @keyframes fade-up {
     from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .pulse-ring {
     animation: pulse-ring 2.4s ease-out infinite;
   }
+
+  .input,
+  input.input,
+  textarea.input,
+  select.input {
+    width: 100% !important;
+    min-height: 44px !important;
+    border-radius: 8px !important;
+    border: 2px solid rgba(255, 146, 19, 0.72) !important;
+    background: #fff7e8 !important;
+    padding: 11px 14px !important;
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+    color: #061e16 !important;
+    caret-color: #061e16 !important;
+    outline: none !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(6, 30, 22, 0.08),
+      0 8px 24px -18px rgba(0, 0, 0, 0.75) !important;
+  }
+
+  textarea.input {
+    min-height: 96px !important;
+    resize: vertical !important;
+  }
+
+  .input:focus,
+  input.input:focus,
+  textarea.input:focus,
+  select.input:focus {
+    border-color: #ff9213 !important;
+    box-shadow:
+      0 0 0 3px rgba(255, 146, 19, 0.35),
+      inset 0 0 0 1px rgba(6, 30, 22, 0.08) !important;
+  }
+
+  .input::placeholder {
+    color: rgba(6, 30, 22, 0.52) !important;
+  }
+
+  select.input,
+  select.input option {
+    background: #fff7e8 !important;
+    color: #061e16 !important;
+  }
+
   @keyframes pulse-ring {
-    0%   { box-shadow: 0 0 0 0 rgba(232,160,32,0.6); }
-    70%  { box-shadow: 0 0 0 18px rgba(232,160,32,0); }
-    100% { box-shadow: 0 0 0 0 rgba(232,160,32,0); }
+    0% { box-shadow: 0 0 0 0 rgba(255, 146, 19, 0.55); }
+    70% { box-shadow: 0 0 0 18px rgba(255, 146, 19, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 146, 19, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gold-shine,
+    .fade-up,
+    .pulse-ring {
+      animation: none;
+    }
   }
 }
