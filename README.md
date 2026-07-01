@@ -17,7 +17,7 @@ pnpm dev
 Создайте `.env.local` для локального запуска и такие же переменные в Vercel:
 
 ```bash
-NEXT_PUBLIC_SITE_URL=https://your-domain.vercel.app
+NEXT_PUBLIC_SITE_URL=https://usuf-mauve.vercel.app
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 ```
@@ -25,7 +25,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 Для продакшена `NEXT_PUBLIC_SITE_URL` должен быть реальным адресом сайта:
 
 - временно: `https://your-project.vercel.app`
-- после подключения домена: `https://yusufbrand.kz`
+- после подключения домена: замените на ваш основной домен
 
 ## Supabase
 

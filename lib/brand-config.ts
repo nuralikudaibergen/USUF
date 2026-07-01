@@ -1,5 +1,5 @@
 function normalizeSiteUrl(value: string | undefined) {
-  return (value || "https://yusufbrand.kz").replace(/\/+$/, "")
+  return (value || "https://usuf-mauve.vercel.app").replace(/\/+$/, "")
 }
 
 export const brandConfig = {
