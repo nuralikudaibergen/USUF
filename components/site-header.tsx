@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { type FormEvent, type ReactNode, useMemo, useState } from "react"
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react"
 import { Heart, LogIn, Menu, Search, ShoppingBag, User, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useAdmin } from "@/lib/admin-store"
@@ -45,6 +45,15 @@ export function SiteHeader() {
       .slice(0, 5)
   }, [products, searchQuery])
 
+  useEffect(() => {
+    if (!mobileOpen && !searchOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [mobileOpen, searchOpen])
+
   const submitSearch = (e?: FormEvent) => {
     if (e) e.preventDefault()
     const q = searchQuery.trim()
@@ -54,79 +63,81 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gold/20 bg-forest-deep/90 backdrop-blur-xl supports-[backdrop-filter]:bg-forest-deep/75">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="flex size-10 items-center justify-center rounded-full border border-gold/20 text-gold md:hidden"
-          aria-label="Открыть меню"
-        >
-          <Menu className="size-5" />
-        </button>
-
-        <YBLogo size="md" photo />
-
-        <nav className="hidden items-center gap-7 lg:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="gold-underline whitespace-nowrap text-[13px] font-bold uppercase tracking-[0.18em] text-gold-soft transition-colors hover:text-gold"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-2 text-gold sm:gap-3">
+    <>
+      <header className="sticky top-0 z-50 w-full border-b border-gold/20 bg-forest-deep/90 backdrop-blur-xl supports-[backdrop-filter]:bg-forest-deep/75">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <button
             type="button"
-            aria-label="Открыть поиск"
-            onClick={() => setSearchOpen(true)}
-            className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:size-11"
+            onClick={() => setMobileOpen(true)}
+            className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-gold/20 text-gold md:hidden"
+            aria-label="Открыть меню"
           >
-            <Search className="size-5" />
+            <Menu className="size-5" />
           </button>
-          {hydrated && user ? (
-            <Link
-              href="/account"
-              aria-label="Аккаунт"
-              className="hidden size-11 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:flex"
+
+          <YBLogo size="md" photo />
+
+          <nav className="hidden items-center gap-7 lg:flex">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="gold-underline whitespace-nowrap text-[13px] font-bold uppercase tracking-[0.18em] text-gold-soft transition-colors hover:text-gold"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2 text-gold sm:gap-3">
+            <button
+              type="button"
+              aria-label="Открыть поиск"
+              onClick={() => setSearchOpen(true)}
+              className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:size-11"
             >
-              <User className="size-5" />
-            </Link>
-          ) : (
+              <Search className="size-5" />
+            </button>
+            {hydrated && user ? (
+              <Link
+                href="/account"
+                aria-label="Аккаунт"
+                className="hidden size-11 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:flex"
+              >
+                <User className="size-5" />
+              </Link>
+            ) : (
+              <Link
+                href="/auth"
+                aria-label="Войти"
+                className="hidden size-11 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:flex"
+              >
+                <LogIn className="size-5" />
+              </Link>
+            )}
             <Link
-              href="/auth"
-              aria-label="Войти"
-              className="hidden size-11 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:flex"
+              href="/account?tab=wishlist"
+              aria-label="Избранное"
+              className="relative hidden size-11 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:flex"
             >
-              <LogIn className="size-5" />
+              <Heart className="size-5" />
+              {wishCount > 0 && <Badge>{wishCount}</Badge>}
             </Link>
-          )}
-          <Link
-            href="/account?tab=wishlist"
-            aria-label="Избранное"
-            className="relative hidden size-11 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:flex"
-          >
-            <Heart className="size-5" />
-            {wishCount > 0 && <Badge>{wishCount}</Badge>}
-          </Link>
-          <Link
-            href="/cart"
-            aria-label="Корзина"
-            className="relative flex size-10 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:size-11"
-          >
-            <ShoppingBag className="size-5" />
-            {count > 0 && <Badge>{count}</Badge>}
-          </Link>
+            <Link
+              href="/cart"
+              aria-label="Корзина"
+              className="relative flex size-10 items-center justify-center rounded-full border border-gold/20 transition-colors hover:border-gold hover:bg-gold/10 sm:size-11"
+            >
+              <ShoppingBag className="size-5" />
+              {count > 0 && <Badge>{count}</Badge>}
+            </Link>
+          </div>
         </div>
-      </div>
+      </header>
 
       {searchOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-forest-deep/85 px-4 pt-20 backdrop-blur sm:pt-24"
+          className="fixed inset-0 z-[90] flex items-start justify-center bg-forest-deep/85 px-4 pt-20 backdrop-blur sm:pt-24"
           onClick={() => setSearchOpen(false)}
         >
           <div className="w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
@@ -147,7 +158,7 @@ export function SiteHeader() {
                 type="button"
                 onClick={() => setSearchOpen(false)}
                 aria-label="Закрыть поиск"
-                className="flex size-10 items-center justify-center rounded-md text-gold transition-colors hover:bg-gold/10"
+                className="flex size-10 cursor-pointer items-center justify-center rounded-md text-gold transition-colors hover:bg-gold/10"
               >
                 <X className="size-5" />
               </button>
@@ -195,15 +206,21 @@ export function SiteHeader() {
       )}
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-forest-deep/80 backdrop-blur-sm md:hidden">
-          <div className="h-full w-80 max-w-[86%] overflow-y-auto border-r border-gold/25 bg-forest p-5">
+        <div
+          className="fixed inset-0 z-[90] bg-forest-deep/80 backdrop-blur-sm md:hidden"
+          onClick={() => setMobileOpen(false)}
+        >
+          <aside
+            className="h-full w-80 max-w-[86%] overflow-y-auto border-r border-gold/25 bg-forest p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-8 flex items-center justify-between">
               <YBLogo size="sm" photo />
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Закрыть меню"
-                className="flex size-10 items-center justify-center rounded-full border border-gold/25 text-gold"
+                className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-gold/25 text-gold"
               >
                 <X className="size-5" />
               </button>
@@ -236,10 +253,10 @@ export function SiteHeader() {
                 FAQ
               </Link>
             </nav>
-          </div>
+          </aside>
         </div>
       )}
-    </header>
+    </>
   )
 }
 
